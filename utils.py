@@ -12,10 +12,13 @@ def run_command(command, silent=False):
         result = subprocess.run(
             command, shell=True, check=True, text=True, capture_output=True
         )
-        print("RESULT", result)
-        if not silent and VERBOSE and result.stdout:
-            print("Command output:")
-            print(result.stdout)
+        if not silent and (VERBOSE or result.stdout or result.stderr):
+            # Print a more readable version of the CompletedProcess
+            print("RESULT:")
+            print(f"  Command: {command}")
+            print(f"  Return code: {result.returncode}")
+            print(f"  STDOUT: {result.stdout.strip() or '(empty)'}")
+            print(f"  STDERR: {result.stderr.strip() or '(empty)'}")
         return result.stdout
     except subprocess.CalledProcessError as e:
         print(f"Error executing command: {command}")

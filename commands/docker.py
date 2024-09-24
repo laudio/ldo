@@ -1,13 +1,12 @@
 import argparse
 import os
+import time
 from ldo.main import BaseCommand
 from ldo.utils import run_command
 from ldo.constants import DOCKER_COMPOSE_DIR
 import logging
 
 logger = logging.getLogger(__name__)
-
-logger.debug("Importing docker.py")
 
 
 class DockerCommand(BaseCommand):
@@ -35,32 +34,28 @@ class DockerCommand(BaseCommand):
         else:
             logger.error(f"Unknown action: {args.action}")
 
-    def up(self, *containers: str) -> None:
-        self._docker_compose_action("up -d", containers)
+    def up(self, *containers: list[str] | None) -> None:
+        self._docker_compose_action("up -d", *containers)
         if "vault" in containers:
+            # Wait for the container to start
+            time.sleep(1)
             run_command("./vault/vault.sh unseal")
 
-    def down(self, *containers: str) -> None:
-        self._docker_compose_action("down", containers)
+    def down(self, *containers: list[str] | None) -> None:
+        self._docker_compose_action("down", *containers or [])
 
-    def restart(self, *containers: str) -> None:
-        self._docker_compose_action("restart", containers)
+    def restart(self, *containers: list[str] | None) -> None:
+        self._docker_compose_action("restart", *containers or [])
 
-    def start(self) -> None:
-        self.up("vault")
-        self.up("mssql", "redis")
+    def start(self, _) -> None:
+        self.up(["vault"])
+        self.up(["mssql", "redis"])
         self.up()
 
-    def _docker_compose_action(self, action: str, containers: tuple) -> None:
-        container_str = " ".join(containers)
+    def _docker_compose_action(self, action: str, containers: list[str] | None) -> None:
+        container_str = " ".join(containers or [])
         print(
             f"{action.capitalize()}ing {container_str if container_str else 'all containers'}..."
         )
         os.chdir(DOCKER_COMPOSE_DIR)
         run_command(f"docker-compose {action} {container_str}")
-
-
-logger.debug(f"DockerCommand bases: {DockerCommand.__bases__}")
-logger.debug(
-    f"DockerCommand is subclass of BaseCommand: {issubclass(DockerCommand, BaseCommand)}"
-)
