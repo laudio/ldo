@@ -57,11 +57,15 @@ Manage Docker containers:
 - `up`: Bring up Docker containers
 - `down`: Bring down Docker containers
 - `restart`: Restart Docker containers
-- `start`: Start Docker without any container argument
+- `start`: Start all Docker containers in the proper order (ensuring we unseal the vault as well)
 
 Example:
 ```
 ./ldo docker up mysql redis
+```
+
+```
+./ldo docker up vault # Also unseals the vault
 ```
 
 ### Core
