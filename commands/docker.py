@@ -50,7 +50,7 @@ class DockerCommand(BaseCommand):
     def start(self, _) -> None:
         self.up(["vault"])
         self.up(["mssql", "redis"])
-        self.up()
+        self.up([])
 
     def _docker_compose_action(self, action: str, containers: list[str] | None) -> None:
         container_str = " ".join(containers or [])
