@@ -1,0 +1,14 @@
+#!/bin/bash
+
+# Navigate to the directory where main.py is located (optional)
+cd "$(dirname "$0")"
+
+# Check if Python 3 is available
+if ! command -v python3 &> /dev/null
+then
+    echo "Python 3 could not be found. Please install it to run the script."
+    exit
+fi
+
+# Execute the main.py script with arguments passed to the shell script
+PYTHONPATH=. python3 main.py "$@"
