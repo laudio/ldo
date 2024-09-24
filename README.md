@@ -50,6 +50,17 @@ To see available actions for a specific command:
 
 ## Available Commands
 
+### DB
+
+Manage Docker containers:
+
+- `client-migrate`: Runs `yarn client:migrate` && `yarn client:sync`
+
+Example:
+```
+./ldo db client-migrate
+```
+
 ### Docker
 
 Manage Docker containers:
@@ -112,13 +123,6 @@ class NewCommand(BaseCommand):
 ```
 
 The new command will be automatically discovered and added to the CLI.
-
-## Development
-
-- The main logic is in `main.py`.
-- The `BaseCommand` class is defined in `base_command.py`.
-- Individual commands are in the `commands/` directory.
-- The `ldo` script is a wrapper that sets up the Python environment and runs `main.py`.
 
 ## Contributing
 
