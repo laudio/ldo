@@ -36,7 +36,7 @@ class DockerCommand(BaseCommand):
 
     def up(self, *containers: list[str] | None) -> None:
         self._docker_compose_action("up -d", *containers)
-        if "vault" in containers:
+        if containers and containers[0] and "vault" in containers[0]:
             # Wait for the container to start
             time.sleep(1)
             run_command("./vault/vault.sh unseal")
