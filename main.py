@@ -23,11 +23,14 @@ class CommandRegistry:
 
     def register(self, command_name: str, command_class: Type[BaseCommand]) -> None:
         logger.debug(f"Registering command: {command_name}")
-        subparser = self.subparsers.add_parser(command_name)
-        command_instance = command_class()
-        command_instance.register(subparser)
-        self.registered_commands[command_name] = command_instance
-        logger.debug(f"Registered command: {command_name}")
+        if command_name not in self.subparsers.choices:
+            subparser = self.subparsers.add_parser(command_name)
+            command_instance = command_class()
+            command_instance.register(subparser)
+            self.registered_commands[command_name] = command_instance
+            logger.debug(f"Registered command: {command_name}")
+        else:
+            logger.warning(f"Command {command_name} already registered. Skipping.")
 
     def parse_and_run(self) -> None:
         logger.debug(f"Registered commands: {list(self.registered_commands.keys())}")

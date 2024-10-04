@@ -2,10 +2,8 @@ import argparse
 import os
 import re
 from ldo.main import BaseCommand
-from ldo.utils import run_command, copy_file
+from ldo.utils import update_file, run_command, copy_file
 from ldo.constants import DOCKER_COMPOSE_DIR
-
-# from ldo.commands.docker import DockerCommand
 import logging
 
 logger = logging.getLogger(__name__)
@@ -15,18 +13,16 @@ class VaultCommand(BaseCommand):
     VAULT_SCRIPT = "./vault/vault.sh"
 
     def register(self, subparser: argparse.ArgumentParser) -> None:
-        """Register the docker command and its subcommands."""
+        """Register the vault command and its subcommands."""
         logger.debug("Registering VaultCommand")
         action_subparsers = subparser.add_subparsers(dest="action", required=True)
         action_subparsers.add_parser(
             "setup", help="Setups a vault if one doesn't exist"
         )
-        action_subparsers.add_parser(
-            "unseal", help="Start Docker without any container argument"
-        )
+        action_subparsers.add_parser("unseal", help="Unseal the vault")
 
     def run(self, args: argparse.Namespace) -> None:
-        """Run the appropriate docker action based on the parsed arguments."""
+        """Run the appropriate vault action based on the parsed arguments."""
         logger.debug(f"Running VaultCommand with args: {args}")
         action_method = getattr(self, args.action, None)
         if action_method:
@@ -43,7 +39,6 @@ class VaultCommand(BaseCommand):
             logger.info("Vault already setup...")
             return
 
-        docker = DockerCommand()
         vault_config_source = os.path.join(
             DOCKER_COMPOSE_DIR, "vault", "config.json.example"
         )
@@ -51,7 +46,9 @@ class VaultCommand(BaseCommand):
         copy_file(vault_config_source, vault_config_dest)
 
         os.chdir(DOCKER_COMPOSE_DIR)
-        docker.run("vault")
+
+        # Instead of using DockerCommand, use run_command directly
+        run_command("docker-compose up -d vault")
 
         try:
             output = run_command(f"{self.VAULT_SCRIPT} init", silent=True)
@@ -59,7 +56,7 @@ class VaultCommand(BaseCommand):
             if vault_token:
                 logger.info(f"Vault token: {vault_token}")
                 env_file = os.path.join(DOCKER_COMPOSE_DIR, ".env")
-                self.utils.update_file(env_file, "LOCAL_VAULT_TOKEN", vault_token)
+                update_file(env_file, "LOCAL_VAULT_TOKEN", vault_token)
                 logger.info("Vault initialized successfully.")
             else:
                 logger.error("Error: Root token not found in output")
@@ -74,5 +71,4 @@ class VaultCommand(BaseCommand):
             match = re.search(r"^token\s+(.*)", line)
             if match:
                 return match.group(1)
-
         return None
