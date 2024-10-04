@@ -15,45 +15,48 @@ VERBOSE = True
 def run_command(command, silent=False):
     if VERBOSE:
         print(f"Executing command: {command}")
-
-    # Prepare to capture output
     output = io.StringIO()
-
     args = shlex.split(command)
-
     try:
-        # Use Popen to create the process
         process = subprocess.Popen(
             args,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
+            stdin=subprocess.PIPE,
             text=True,
             bufsize=1,
             universal_newlines=True,
         )
-
-        # Use select to read from stdout and stderr
         readable = {process.stdout, process.stderr}
-        while readable:
-            ready, _, _ = select.select(readable, [], [])
-            for stream in ready:
-                line = stream.readline()
-                if not line:
-                    readable.remove(stream)
-                    continue
-                if not silent:
-                    if stream == process.stderr:
-                        print(line, end="", file=sys.stderr, flush=True)
-                    else:
-                        print(line, end="", flush=True)
-                output.write(line)
+        writable = {process.stdin}
+        while readable or writable:
+            r, w, x = select.select(readable, writable, [])
 
-        # Wait for the process to complete and get the return code
+            for stream in r:
+                if stream in (process.stdout, process.stderr):
+                    line = stream.readline()
+                    if not line:
+                        readable.remove(stream)
+                        continue
+                    if not silent:
+                        if stream == process.stderr:
+                            print(line, end="", file=sys.stderr, flush=True)
+                        else:
+                            print(line, end="", flush=True)
+                    output.write(line)
+
+            if process.stdin in w:
+                # Check if there's any input from the user
+                if sys.stdin in select.select([sys.stdin], [], [], 0)[0]:
+                    user_input = input()
+                    process.stdin.write(user_input + "\n")
+                    process.stdin.flush()
+                else:
+                    writable.remove(process.stdin)
+
         return_code = process.wait()
-
         if return_code != 0:
             raise subprocess.CalledProcessError(return_code, command, output.getvalue())
-
     except subprocess.CalledProcessError as e:
         logger.error(f"Error executing command: {command}")
         logger.error(f"Return code: {e.returncode}")
@@ -63,7 +66,6 @@ def run_command(command, silent=False):
         logger.error(f"Unexpected error executing command: {command}")
         logger.error(f"Error: {str(e)}")
         raise
-
     return output.getvalue()
 
 

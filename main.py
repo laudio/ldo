@@ -34,9 +34,14 @@ class CommandRegistry:
 
         # First, parse just the command to avoid premature exit
         command_parser = argparse.ArgumentParser(add_help=False)
+        command_parser.add_argument(
+            "-v", "--verbose", action="store_true", help="Enable verbose output"
+        )
         command_parser.add_argument("command")
         try:
             command_args, remaining_args = command_parser.parse_known_args()
+            if command_args.verbose:
+                logging.basicConfig(level=logging.DEBUG)
         except SystemExit:
             self.parser.print_help()
             return
