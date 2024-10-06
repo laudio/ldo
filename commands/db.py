@@ -25,5 +25,5 @@ class DBCommand(BaseCommand):
 
     def client_migrate(self) -> None:
         os.chdir(DOCKER_COMPOSE_DIR)
-        docker_command = "docker-compose exec -T db bash -c 'yarn client:migrate && yarn client:sync'"
+        docker_command = "docker-compose exec -T db bash -c 'yarn client:sync'"
         run_command(docker_command)
