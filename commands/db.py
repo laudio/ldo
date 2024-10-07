@@ -10,20 +10,30 @@ class DBCommand(BaseCommand):
         """Register the core command and its subcommands."""
         action_subparsers = subparser.add_subparsers(dest="action", required=True)
 
-        # Register 'rebuild' action
-        action_subparsers.add_parser(
-            "client-migrate",
-            help="Run client schema migrations and synchronize across all client DBs",
+        # Register 'migrate' action
+        migrate_parser = action_subparsers.add_parser(
+            "migrate",
+            help="Run migration and synchronize across DBs",
         )
+
+        # Add subparser for 'client' or 'common' argument
+        migrate_subparsers = migrate_parser.add_subparsers(
+            dest="migrate_type", required=True
+        )
+
+        migrate_subparsers.add_parser("client", help="Run client-specific migration")
+        migrate_subparsers.add_parser("common", help="Run common migration")
 
     def run(self, args: argparse.Namespace) -> None:
         """Run the appropriate core action based on the parsed arguments."""
-        if args.action == "client-migrate":
-            self.client_migrate()
+        if args.action == "migrate" and args.migrate_type:
+            self.migrate(args.migrate_type)
         else:
             print(f"Unknown action: {args.action}")
 
-    def client_migrate(self) -> None:
+    def migrate(self, migration_type) -> None:
         os.chdir(DOCKER_COMPOSE_DIR)
-        docker_command = "docker-compose exec -T db bash -c 'yarn client:sync'"
+        docker_command = (
+            f"docker-compose exec -T db bash -c 'yarn {migration_type}:sync'"
+        )
         run_command(docker_command)

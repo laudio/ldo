@@ -5,6 +5,8 @@ import sys
 from typing import Dict, Type
 import logging
 import inspect
+import io
+import contextlib
 
 from base_command import BaseCommand
 
@@ -53,13 +55,43 @@ class CommandRegistry:
             command_instance = self.registered_commands[command_args.command]
             command_subparser = self.subparsers.choices[command_args.command]
 
-            if remaining_args:
-                args = command_subparser.parse_args(remaining_args)
-                command_instance.run(args)
-            else:
-                command_subparser.print_help()
+            # Caputre the top-level failed parse error and let us handle it explicitly
+            # Without capturing the stderr, we'll see two error messages
+            with contextlib.redirect_stderr(io.StringIO()):
+                try:
+                    args = command_subparser.parse_args(remaining_args)
+                    command_instance.run(args)
+                except SystemExit:
+                    # If parsing fails, print the help for the requested subcommand
+                    self.print_subcommand_help(command_args.command, remaining_args)
+                    sys.exit(0)
         else:
             self.parser.print_help()
+
+    def print_subcommand_help(self, command: str, args: list):
+        """Print help for a specific subcommand, including nested subcommands."""
+        subparser = self.subparsers.choices[command]
+
+        # Check if there are nested subparsers
+        nested_subparsers = next(
+            (
+                action
+                for action in subparser._actions
+                if isinstance(action, argparse._SubParsersAction)
+            ),
+            None,
+        )
+
+        if nested_subparsers and args:
+            # If there's a nested subparser and we have arguments, try to print help for the nested command
+            nested_command = args[0]
+            if nested_command in nested_subparsers.choices:
+                nested_subparsers.choices[nested_command].print_help()
+            else:
+                subparser.print_help()
+        else:
+            # If no nested subparsers or no arguments, print help for the main subcommand
+            subparser.print_help()
 
 
 def import_and_register_commands(registry: CommandRegistry):
