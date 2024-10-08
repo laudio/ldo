@@ -14,13 +14,10 @@ class CoreCommand(BaseCommand):
         action_subparsers = subparser.add_subparsers(dest="action", required=True)
 
         # Register 'rebuild' action
-        rebuild_parser = action_subparsers.add_parser(
-            "rebuild", help="Rebuild the core repository"
-        )
+        action_subparsers.add_parser("rebuild", help="Rebuild the core repository")
 
     def run(self, args: argparse.Namespace) -> None:
         """Run the appropriate docker action based on the parsed arguments."""
-        logger.debug(f"Running DockerCommand with args: {args}")
         action_method = getattr(self, args.action, None)
         if action_method:
             action_method()

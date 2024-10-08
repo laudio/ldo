@@ -38,7 +38,7 @@ class DockerCommand(BaseCommand):
         self._docker_compose_action("up -d", *containers)
         if containers and containers[0] and "vault" in containers[0]:
             # Wait for the container to start
-            time.sleep(1)
+            time.sleep(2)
             run_command("./vault/vault.sh unseal")
 
     def down(self, *containers: list[str] | None) -> None:
@@ -46,6 +46,10 @@ class DockerCommand(BaseCommand):
 
     def restart(self, *containers: list[str] | None) -> None:
         self._docker_compose_action("restart", *containers or [])
+        if containers and containers[0] and "vault" in containers[0]:
+            # Wait for the container to start
+            time.sleep(2)
+            run_command("./vault/vault.sh unseal")
 
     def start(self, _) -> None:
         self.up(["vault"])
